@@ -1,109 +1,78 @@
 import streamlit as st
-import time
-st.image('medi_snap.jpg',width=200)
-# some functions are title, code, header, later, caption, markdown
+st.set_page_config(layout="wide",page_icon = 'Cartoon2.png')
+st.markdown(
+        r"""
+        <style> 
+        MainMenu {visibility: hidden;}
+        .stAppDeployButton {
+                visibility: hidden;
+            }
+        footer{visibility: hidden;}
+        </style>
+        """, unsafe_allow_html=True
+    )
+st.image('Cartoon1.jpg',width=None)
+default_value_goes_here = 0
+user_input = st.number_input("enter the number of members ",default_value_goes_here)
 
-#input widgedswidgets are the user interface components that allows you to bake intereractively directly into your app.
-# e.g. checkbox() , sldier buttom, selectbox, radio, time_input()
+members = []
+if user_input:
+    # st.info(user_input)
+    i=0
+    while i<user_input:
+        user_input = int(user_input)
+        name = st.text_input(f"Enter the name of member {i+1}",key=f"input_text{i+1}")
+        contro = st.number_input(f"enter amount of contro of member {i+1}",key=f"input_number{i+1}",value=None)
+        members.append((contro, name))
+        i+=1
+    button1 = st.button('Next')
+    if button1:
+        # Printing the details
+        total = sum(contro for contro, _ in members)
+        j=0
+        for contro, name in members:
+            st.write(f"{name} {contro}",key=f"printing{j}")
+            j+=1
+        st.info(f"\nThe total expenditure of the trip is {round(total,2)}")
+        per_head = total / user_input
+        st.info(f"Contro per head: {round(per_head,2)}\n")
 
-#title - title of the app
-st.title("Welcome! Manoj")
+        for i in range(user_input):
+            diff = per_head - members[i][0]
+            members[i] = (diff, members[i][1])  # Update with the difference
 
-#header 
-st.header("Machine learning")
+        st.subheader("Difference with respect to per head:")
+        for contro, name in members:
+            if contro > 0:
+                st.info(f"{name} spent {round(contro,2)} less than per head on the trip")
+            else:
+                st.info(f"{name} spent {round(-contro,2)} more than per head on the trip")
 
-#sub_header
-st.subheader("Linear Regression")
+        # Sorting the list of tuples
+        members.sort(key=lambda x: x[0])
 
-# #st.info() - to add infoormation
-st.info("Details of the users")
+        st.subheader("RESULT")
 
-# #how to give warning message
-st.warning('cpme one time! samja ki nhi')
+        fst = 0
+        lst = user_input - 1
 
-# #error message
-st.error("Wrong password dala hai bhai")
+        while fst < lst:
+            positive_first = max(0, -members[fst][0])
 
-# #success message
-st.success("correct password, kya baat hai bhai")
-# write()
-st.write("Employee Name")
-st.write(range(50))
-
-# st.markdown("# vs code")
-# st.markdown("## vs code")
-# st.markdown("### vs code")
-
-st.markdown(":moon:")
-
-st.text('i am someone who is best ')
-
-st.caption('how are you bro, i am waIting for you')
-
-st.latex(r''' a+b x^2+c''')
-
-#widgets
-
-#checkbox
-st.checkbox('Login')
-
-#button
-st.button('press')
-
-#radio
-
-st.radio('pick your denger',['male','female'])
-
-#selectbox
-st.selectbox('choose the courese',['ML','cloud','data science','ai'])
-
-#multiselect
-st.multiselect('choose the dept',['content','sales','production','hr'])
-
-#selectslider
-st.select_slider('Rating',['bad','good','excellent','outstanding','garda udha dela'])
-st.select_slider('Rating',[0,1,2,3,4,5,6,7,8,9,10])
-
-st.slider('enter the number',0,100)
-
-#number input
-st.number_input('pick a number',0,100)
-
-#text_input
-st.text_input('enter your email')
-
-st.date_input('DOB')
-
-st.time_input('what is time')
-
-#text area
-st.text_area("welcome to the my new project")
-st.file_uploader('upload your file')
-
-st.color_picker('color')
-
-st.progress(90)
-
-#spinner
-# with st.spinner('just wait'):
-#     time.sleep(3)
-
-# st.balloons()
-
-#sidebar
-st.sidebar.title('welcome to quiz')
-st.sidebar.text_input('mail address')
-st.sidebar.text_input('password')
-st.sidebar.button('submit')
-st.sidebar.radio('who you are',['student','wroking'])
-
-#data visulaiazation
-import pandas as pd
-import numpy as np;
-st.title('bar chart')
-data = pd.DataFrame(np.random.randn(50,2),columns=['x','y'])
-st.bar_chart(data)
-st.title('line chart')
-st.line_chart(data)
-st.title('area chart')
-st.area_chart(data)
+            if positive_first == members[lst][0]:
+                st.success(f"{members[lst][1]} will give {round(members[fst][0] * -1,2)} to {members[fst][1]}")
+                members[fst] = (0, members[fst][1])
+                members[lst] = (0, members[lst][1])
+                fst += 1
+                lst -= 1
+            elif positive_first > members[lst][0]:
+                st.success(f"{members[lst][1]} will give {round(members[lst][0],2)} to {members[fst][1]}")
+                members[fst] = (members[fst][0] + members[lst][0], members[fst][1])
+                members[lst] = (0, members[lst][1])
+                lst -= 1
+            else:
+                st.success(f"{members[lst][1]} will give {round(members[fst][0] * -1,2)} to {members[fst][1]}")
+                members[lst] = (members[lst][0] + members[fst][0], members[lst][1])
+                members[fst] = (0, members[fst][1])
+                fst += 1
+        st.markdown('### Thanks for using Apka Hissa \U0001F600')

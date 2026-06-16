@@ -1,78 +1,409 @@
 import streamlit as st
+
+# --------------------------------------------------
+# PAGE CONFIG
+# --------------------------------------------------
 st.set_page_config(layout="wide",page_icon = 'Cartoon2.png')
-st.markdown(
-        r"""
-        <style> 
-        MainMenu {visibility: hidden;}
-        .stAppDeployButton {
-                visibility: hidden;
-            }
-        footer{visibility: hidden;}
-        </style>
-        """, unsafe_allow_html=True
-    )
-st.image('Cartoon1.jpg',width=None)
-default_value_goes_here = 0
-user_input = st.number_input("enter the number of members ",default_value_goes_here)
+
+st.markdown("""
+<style>
+MainMenu {visibility:hidden;}
+footer {visibility:hidden;}
+.stAppDeployButton {visibility:hidden;}
+</style>
+""", unsafe_allow_html=True)
+st.image('Cartoon1.jpg',width=800)
+st.subheader("Smart Trip Expense Splitter")
+
+# --------------------------------------------------
+# SESSION STATE
+# --------------------------------------------------
+
+if "expense_ids" not in st.session_state:
+    st.session_state.expense_ids = [0]
+
+if "next_expense_id" not in st.session_state:
+    st.session_state.next_expense_id = 1
+
+# --------------------------------------------------
+# MEMBERS
+# --------------------------------------------------
+
+member_count = st.number_input(
+    "Number of Members",
+    min_value=1,
+    step=1
+)
 
 members = []
-if user_input:
-    # st.info(user_input)
-    i=0
-    while i<user_input:
-        user_input = int(user_input)
-        name = st.text_input(f"Enter the name of member {i+1}",key=f"input_text{i+1}")
-        contro = st.number_input(f"enter amount of contro of member {i+1}",key=f"input_number{i+1}",value=None)
-        members.append((contro, name))
-        i+=1
-    button1 = st.button('Next')
-    if button1:
-        # Printing the details
-        total = sum(contro for contro, _ in members)
-        j=0
-        for contro, name in members:
-            st.write(f"{name} {contro}",key=f"printing{j}")
-            j+=1
-        st.info(f"\nThe total expenditure of the trip is {round(total,2)}")
-        per_head = total / user_input
-        st.info(f"Contro per head: {round(per_head,2)}\n")
 
-        for i in range(user_input):
-            diff = per_head - members[i][0]
-            members[i] = (diff, members[i][1])  # Update with the difference
+if member_count:
 
-        st.subheader("Difference with respect to per head:")
-        for contro, name in members:
-            if contro > 0:
-                st.info(f"{name} spent {round(contro,2)} less than per head on the trip")
-            else:
-                st.info(f"{name} spent {round(-contro,2)} more than per head on the trip")
+    st.header("Member Details")
 
-        # Sorting the list of tuples
-        members.sort(key=lambda x: x[0])
+    for i in range(member_count):
 
-        st.subheader("RESULT")
+        name = st.text_input(
+            f"Member {i+1} Name",
+            key=f"member_{i}"
+        )
 
-        fst = 0
-        lst = user_input - 1
+        if name.strip():
+            members.append(name.strip())
 
-        while fst < lst:
-            positive_first = max(0, -members[fst][0])
+# --------------------------------------------------
+# EXPENSES
+# --------------------------------------------------
 
-            if positive_first == members[lst][0]:
-                st.success(f"{members[lst][1]} will give {round(members[fst][0] * -1,2)} to {members[fst][1]}")
-                members[fst] = (0, members[fst][1])
-                members[lst] = (0, members[lst][1])
-                fst += 1
-                lst -= 1
-            elif positive_first > members[lst][0]:
-                st.success(f"{members[lst][1]} will give {round(members[lst][0],2)} to {members[fst][1]}")
-                members[fst] = (members[fst][0] + members[lst][0], members[fst][1])
-                members[lst] = (0, members[lst][1])
-                lst -= 1
-            else:
-                st.success(f"{members[lst][1]} will give {round(members[fst][0] * -1,2)} to {members[fst][1]}")
-                members[lst] = (members[lst][0] + members[fst][0], members[lst][1])
-                members[fst] = (0, members[fst][1])
-                fst += 1
-        st.markdown('### Thanks for using Apka Hissa \U0001F600')
+if len(members) == member_count:
+
+    st.header("Expenses")
+
+    expenses = []
+
+    # ------------------------------------------
+    # EXPENSE LOOP
+    # ------------------------------------------
+
+    for idx, expense_id in enumerate(
+        st.session_state.expense_ids
+    ):
+
+        with st.container(border=True):
+
+            col1, col2 = st.columns([10, 1])
+
+            with col1:
+                st.subheader(
+                    f"Expense {idx + 1}"
+                )
+
+            with col2:
+
+                if len(
+                    st.session_state.expense_ids
+                ) > 1:
+
+                    if st.button(
+                        "🗑",
+                        key=f"delete_expense_{expense_id}"
+                    ):
+                        st.session_state.expense_ids.remove(
+                            expense_id
+                        )
+                        st.rerun()
+
+            expense_name = st.text_input(
+                "Expense Name",
+                key=f"expense_name_{expense_id}"
+            )
+
+            st.markdown("### Contributors")
+
+            contributor_key = (
+                f"contributors_count_{expense_id}"
+            )
+
+            if contributor_key not in st.session_state:
+                st.session_state[
+                    contributor_key
+                ] = 1
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+
+                if st.button(
+                    "➕ Add Contributor",
+                    key=f"add_contributor_{expense_id}"
+                ):
+                    st.session_state[
+                        contributor_key
+                    ] += 1
+                    st.rerun()
+
+            with c2:
+
+                if (
+                    st.session_state[
+                        contributor_key
+                    ] > 1
+                ):
+
+                    if st.button(
+                        "➖ Remove Contributor",
+                        key=f"remove_contributor_{expense_id}"
+                    ):
+                        st.session_state[
+                            contributor_key
+                        ] -= 1
+                        st.rerun()
+
+            contributors = {}
+
+            total_expense = 0
+
+            for j in range(
+                st.session_state[
+                    contributor_key
+                ]
+            ):
+
+                cc1, cc2 = st.columns([2, 1])
+
+                with cc1:
+
+                    contributor = st.selectbox(
+                        f"Contributor {j+1}",
+                        members,
+                        key=f"contributor_person_{expense_id}_{j}"
+                    )
+
+                with cc2:
+
+                    amount = st.number_input(
+                        f"Amount {j+1}",
+                        min_value=0.0,
+                        step=1.0,
+                        key=f"contributor_amount_{expense_id}_{j}"
+                    )
+
+                contributors[contributor] = (
+                    contributors.get(
+                        contributor,
+                        0
+                    )
+                    + amount
+                )
+
+                total_expense += amount
+
+            st.info(
+                f"Total Expense Amount: ₹ {round(total_expense,2)}"
+            )
+
+            consumers = st.multiselect(
+                "Consumed By",
+                members,
+                default=members,
+                key=f"consumers_{expense_id}"
+            )
+
+            expenses.append(
+                {
+                    "name": expense_name,
+                    "contributors": contributors,
+                    "consumers": consumers,
+                }
+            )
+
+    # ------------------------------------------
+    # ADD EXPENSE BUTTON
+    # ------------------------------------------
+
+    st.markdown("###")
+
+    if st.button(
+        "➕ Add Expense",
+        use_container_width=True
+    ):
+
+        st.session_state.expense_ids.append(
+            st.session_state.next_expense_id
+        )
+
+        st.session_state.next_expense_id += 1
+
+        st.rerun()
+
+    # ------------------------------------------
+    # CALCULATE
+    # ------------------------------------------
+
+    st.markdown("###")
+
+    if st.button(
+        "💰 Calculate Settlement",
+        use_container_width=True
+    ):
+
+        paid = {
+            member: 0
+            for member in members
+        }
+
+        owed = {
+            member: 0
+            for member in members
+        }
+
+        grand_total = 0
+
+        # -----------------------------
+        # PROCESS EXPENSES
+        # -----------------------------
+
+        for expense in expenses:
+
+            consumers = expense[
+                "consumers"
+            ]
+
+            if len(consumers) == 0:
+                continue
+
+            expense_total = sum(
+                expense[
+                    "contributors"
+                ].values()
+            )
+
+            grand_total += expense_total
+
+            for (
+                contributor,
+                amount
+            ) in expense[
+                "contributors"
+            ].items():
+
+                paid[
+                    contributor
+                ] += amount
+
+            share = (
+                expense_total
+                / len(consumers)
+            )
+
+            for consumer in consumers:
+
+                owed[
+                    consumer
+                ] += share
+
+        # -----------------------------
+        # BALANCE
+        # -----------------------------
+
+        balance = {}
+
+        for member in members:
+
+            balance[
+                member
+            ] = round(
+                paid[member]
+                - owed[member],
+                2
+            )
+
+        # -----------------------------
+        # SUMMARY
+        # -----------------------------
+
+        st.header("Trip Summary")
+
+        st.success(
+            f"Total Expense : ₹ {round(grand_total,2)}"
+        )
+
+        summary = []
+
+        for member in members:
+
+            summary.append(
+                {
+                    "Member": member,
+                    "Paid": round(
+                        paid[member],
+                        2
+                    ),
+                    "Consumed": round(
+                        owed[member],
+                        2
+                    ),
+                    "Balance": round(
+                        balance[member],
+                        2
+                    ),
+                }
+            )
+
+        st.dataframe(
+            summary,
+            use_container_width=True
+        )
+
+        # -----------------------------
+        # SETTLEMENT
+        # -----------------------------
+
+        creditors = []
+        debtors = []
+
+        for member, amount in balance.items():
+
+            if amount > 0:
+                creditors.append(
+                    [member, amount]
+                )
+
+            elif amount < 0:
+                debtors.append(
+                    [
+                        member,
+                        abs(amount)
+                    ]
+                )
+
+        creditors.sort(
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        debtors.sort(
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        st.header(
+            "Final Settlement"
+        )
+
+        i = 0
+        j = 0
+
+        while (
+            i < len(debtors)
+            and j < len(creditors)
+        ):
+
+            debtor_name = debtors[i][0]
+            debtor_amt = debtors[i][1]
+
+            creditor_name = creditors[j][0]
+            creditor_amt = creditors[j][1]
+
+            payment = min(
+                debtor_amt,
+                creditor_amt
+            )
+
+            st.success(
+                f"💸 {debtor_name} pays ₹{round(payment,2)} to {creditor_name}"
+            )
+
+            debtors[i][1] -= payment
+            creditors[j][1] -= payment
+
+            if debtors[i][1] < 0.01:
+                i += 1
+
+            if creditors[j][1] < 0.01:
+                j += 1
+
+        st.markdown("---")
+        st.markdown(
+            "### Thanks for using Apka Hissa 😀"
+        )
